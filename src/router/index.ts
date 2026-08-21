@@ -3,7 +3,6 @@ import DashboardView from '@/views/admin/DashboardView.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import AdminTicketsView from '@/views/admin/TicketsView.vue'
 
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -20,6 +19,11 @@ const router = createRouter({
           path: 'tickets',
           name: 'admin-tickets',
           component: AdminTicketsView,
+        },
+        {
+          path: 'knowledge',
+          name: 'admin-knowledge',
+          component: () => import('@/views/admin/KnowledgeBaseView.vue'),
         },
       ],
     },
