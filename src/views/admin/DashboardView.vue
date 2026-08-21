@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="page-title">Dashboard</h1>
+    <h1 class="page-title">IT-HELP DESK ASSISTANT</h1>
 
     <p v-if="ticketStore.loading" class="muted">Loading…</p>
     <p v-else-if="ticketStore.error" class="error">{{ ticketStore.error }}</p>
@@ -38,17 +38,27 @@
           </div>
         </section>
 
-        <!-- <section class="card">
-          <h2>Knowledge Base</h2>
-          <p v-if="knowledgeStore.loading" class="muted">Loading…</p>
-          <p v-else-if="knowledgeStore.error" class="muted">{{ knowledgeStore.error }}</p>
+        <section class="card knowledge-preview">
+          <div class="card-heading">
+            <h2>Knowledge Base</h2>
+            <RouterLink to="/admin/knowledge">Manage →</RouterLink>
+          </div>
+
+          <p v-if="knowledgeStore.loading" class="muted">Loading...</p>
+
+          <p v-else-if="knowledgeStore.articles.length === 0" class="muted">No articles yet.</p>
+
           <ul v-else class="kb-list">
-            <li v-for="a in knowledgeStore.articles.slice(0, 5)" :key="a.id">
-              <span class="kb-title">{{ a.title }}</span>
-              <span class="kb-meta">{{ a.category }}</span>
+            <li v-for="article in knowledgeStore.articles.slice(0, 5)" :key="article.id">
+              <span v-if="article.published" class="pub-tag">PUB</span>
+
+              <div>
+                <strong>{{ article.title }}</strong>
+                <small> {{ article.category }} · {{ article.authorName || 'Admin' }} </small>
+              </div>
             </li>
           </ul>
-        </section> -->
+        </section>
       </div>
 
       <section class="card">
@@ -68,8 +78,12 @@
               <td>{{ t.title }}</td>
               <td>{{ t.requesterName }}</td>
               <td>{{ t.category }}</td>
-              <td><span class="badge" :class="t.priority">{{ t.priority }}</span></td>
-              <td><span class="badge" :class="t.status">{{ t.status }}</span></td>
+              <td>
+                <span class="badge" :class="t.priority">{{ t.priority }}</span>
+              </td>
+              <td>
+                <span class="badge" :class="t.status">{{ t.status }}</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -81,14 +95,14 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useTicketStore } from '@/stores/ticket'
-// import { useKnowledgeStore } from '@/stores/knowledgeBase'
+import { useKnowledgeStore } from '@/stores/knowledgeBase'
 
 const ticketStore = useTicketStore()
-// const knowledgeStore = useKnowledgeStore()
+const knowledgeStore = useKnowledgeStore()
 
 onMounted(() => {
   ticketStore.fetchTickets()
-  // knowledgeStore.fetchArticles()
+  knowledgeStore.fetchArticles()
 })
 </script>
 
@@ -97,6 +111,7 @@ onMounted(() => {
   font-size: 22px;
   color: #1f2937;
   margin: 0 0 20px;
+  background-color: #f3f4f4;
 }
 
 .muted {
@@ -281,5 +296,72 @@ td {
   .stats {
     grid-template-columns: 1fr;
   }
+}
+
+.knowledge-preview {
+  min-width: 0;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-heading h2 {
+  margin: 0;
+}
+
+.card-heading a {
+  color: #2563eb;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.kb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kb-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.kb-list li:last-child {
+  border-bottom: 0;
+}
+
+.kb-list strong,
+.kb-list small {
+  display: block;
+}
+
+.kb-list strong {
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-list small {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.pub-tag {
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
 }
 </style>
