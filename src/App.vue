@@ -4,4 +4,8 @@
   <RouterView />
 </template>
 
-<style scoped></style>
+<style>
+* {
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+</style>
