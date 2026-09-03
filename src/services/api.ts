@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? ''
+const ORIGIN = BASE_URL.replace(/\/api\/?$/, '')
 
 export class ApiError extends Error {
   constructor(
@@ -9,14 +10,25 @@ export class ApiError extends Error {
   }
 }
 
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match?.[1] ? decodeURIComponent(match[1]) : null
+}
+
+export async function ensureCsrfCookie(): Promise<void> {
+  if (getCookie('XSRF-TOKEN')) return
+  await fetch(`${ORIGIN}/sanctum/csrf-cookie`, { credentials: 'include' })
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  // ponytail: token key 'token' — align with auth flow once BE contract lands
-  const token = localStorage.getItem('token')
+  await ensureCsrfCookie()
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Accept: 'application/json',
+      'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
       ...options.headers,
     },
   })
