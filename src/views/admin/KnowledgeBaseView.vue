@@ -73,21 +73,21 @@
               </td>
 
               <td class="symptoms-cell">
-                {{ getSymptoms(article.content) }}
+                {{ getSymptoms(article.symptoms) }}
               </td>
 
               <td>
-                <span class="status-badge" :class="article.published ? 'published' : 'draft'">
-                  {{ article.published ? 'Published' : 'Draft' }}
+                <span class="status-badge" :class="article.status === 'Published' ? 'published' : 'draft'">
+                  {{ article.status }}
                 </span>
               </td>
 
               <td class="date-cell">
-                {{ formatDate(article.updatedAt) }}
+                {{ formatDate(article.updated_at) }}
               </td>
 
               <td class="author-cell">
-                {{ article.authorName || 'Admin' }}
+                {{ article.updated_by ?? 'Admin' }}
               </td>
 
               <td>
@@ -154,15 +154,30 @@
             Symptoms / content
 
             <textarea
-              v-model="form.content"
-              rows="8"
-              placeholder="Describe the symptoms and troubleshooting steps..."
+              v-model="form.symptoms"
+              rows="5"
+              placeholder="Describe the symptoms..."
               required
             ></textarea>
           </label>
 
+          <label>
+            Troubleshooting steps (one per line)
+            <textarea
+              v-model="form.steps"
+              rows="5"
+              placeholder="Reconnect to Wi-Fi.&#10;Open a website to verify access."
+              required
+            ></textarea>
+          </label>
+
+          <label>
+            Expected result
+            <input v-model="form.expected_result" type="text" required />
+          </label>
+
           <label class="checkbox-field">
-            <input v-model="form.published" type="checkbox" />
+            <input v-model="form.status" type="checkbox" true-value="Published" false-value="Draft" />
             <span>Publish this article</span>
           </label>
         </div>
@@ -192,7 +207,7 @@ type StatusFilter = 'all' | 'published' | 'draft'
 
 const store = useKnowledgeStore()
 const dialogRef = ref<HTMLDialogElement | null>(null)
-const editingId = ref<string | null>(null)
+const editingId = ref<number | null>(null)
 
 const search = ref('')
 const categoryFilter = ref('all')
@@ -201,8 +216,10 @@ const statusFilter = ref<StatusFilter>('all')
 const emptyForm = {
   title: '',
   category: '',
-  content: '',
-  published: true,
+  symptoms: '',
+  steps: '',
+  expected_result: '',
+  status: 'Published' as const,
 }
 
 const form = reactive({ ...emptyForm })
@@ -210,20 +227,20 @@ const form = reactive({ ...emptyForm })
 const filteredArticles = computed(() => {
   const keyword = search.value.trim().toLowerCase()
 
-  return store.articles.filter((article) => {
+  return store.articles.filter((article: KnowledgeArticle) => {
     const matchesSearch =
       !keyword ||
       article.title.toLowerCase().includes(keyword) ||
       article.category.toLowerCase().includes(keyword) ||
-      article.content.toLowerCase().includes(keyword)
+      article.symptoms.toLowerCase().includes(keyword)
 
     const matchesCategory =
       categoryFilter.value === 'all' || article.category === categoryFilter.value
 
     const matchesStatus =
       statusFilter.value === 'all' ||
-      (statusFilter.value === 'published' && article.published) ||
-      (statusFilter.value === 'draft' && !article.published)
+      (statusFilter.value === 'published' && article.status === 'Published') ||
+      (statusFilter.value === 'draft' && article.status === 'Draft')
 
     return matchesSearch && matchesCategory && matchesStatus
   })
@@ -242,8 +259,10 @@ function openEdit(article: KnowledgeArticle) {
   Object.assign(form, {
     title: article.title,
     category: article.category,
-    content: article.content,
-    published: article.published,
+    symptoms: article.symptoms,
+    steps: article.steps.join('\n'),
+    expected_result: article.expected_result,
+    status: article.status,
   })
 
   store.error = ''
@@ -257,15 +276,19 @@ function closeDialog() {
 }
 
 async function saveArticle() {
-  if (!form.title.trim() || !form.category.trim() || !form.content.trim()) {
+  if (!form.title.trim() || !form.category.trim() || !form.symptoms.trim() || !form.steps.trim() || !form.expected_result.trim()) {
     return
   }
 
   const payload = {
     title: form.title.trim(),
     category: form.category.trim(),
-    content: form.content.trim(),
-    published: form.published,
+    symptoms: form.symptoms.trim(),
+    keywords: null,
+    problem_description: form.symptoms.trim(),
+    steps: form.steps.split('\n').map((step) => step.trim()).filter(Boolean),
+    expected_result: form.expected_result.trim(),
+    status: form.status,
   }
 
   const result = editingId.value
@@ -295,7 +318,9 @@ function getSymptoms(content: string) {
   return `${normalized.slice(0, 34)}...`
 }
 
-function formatDate(value: string) {
+function formatDate(value: string | null) {
+  if (!value) return '—'
+
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {

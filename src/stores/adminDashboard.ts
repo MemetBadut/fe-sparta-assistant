@@ -23,8 +23,8 @@ export const useAdminDashboardStore = defineStore('adminDashboard', {
       this.error = ''
       try {
         this.data = await adminDashboardService.get()
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Failed to load Dashboard'
+      } catch {
+        this.error = 'Failed to load Dashboard'
       } finally {
         this.loading = false
       }

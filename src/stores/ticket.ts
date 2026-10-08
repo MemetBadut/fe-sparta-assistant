@@ -9,12 +9,12 @@ export const useTicketStore = defineStore('ticket', {
   }),
   getters: {
     recent: (s) =>
-      [...s.tickets].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
+      [...s.tickets].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5),
     stats: (s) => ({
       total: s.tickets.length,
-      open: s.tickets.filter((t) => t.status === 'open').length,
-      inProgress: s.tickets.filter((t) => t.status === 'in_progress').length,
-      resolved: s.tickets.filter((t) => t.status === 'resolved').length,
+      open: s.tickets.filter((t) => t.status === 'Open').length,
+      inProgress: s.tickets.filter((t) => t.status === 'In Progress').length,
+      resolved: s.tickets.filter((t) => t.status === 'Resolved').length,
     }),
     volumeByCategory: (s) => {
       const map = new Map<string, number>()

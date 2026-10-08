@@ -14,9 +14,9 @@ export const useKnowledgeStore = defineStore('knowledgeBase', {
   }),
 
   getters: {
-    publishedCount: (state) => state.articles.filter((article) => article.published).length,
+    publishedCount: (state) => state.articles.filter((article) => article.status === 'Published').length,
 
-    draftCount: (state) => state.articles.filter((article) => !article.published).length,
+    draftCount: (state) => state.articles.filter((article) => article.status === 'Draft').length,
 
     categories: (state) => [...new Set(state.articles.map((article) => article.category))].sort(),
   },
@@ -50,7 +50,7 @@ export const useKnowledgeStore = defineStore('knowledgeBase', {
       }
     },
 
-    async updateArticle(id: string, payload: KnowledgeArticleInput) {
+    async updateArticle(id: number, payload: Partial<KnowledgeArticleInput>) {
       this.saving = true
       this.error = ''
 
@@ -70,7 +70,7 @@ export const useKnowledgeStore = defineStore('knowledgeBase', {
       }
     },
 
-    async deleteArticle(id: string) {
+    async deleteArticle(id: number) {
       this.saving = true
       this.error = ''
 
