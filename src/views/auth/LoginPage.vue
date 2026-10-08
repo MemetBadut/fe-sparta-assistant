@@ -8,6 +8,7 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const showPassword = ref(false)
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -17,9 +18,9 @@ async function onSubmit() {
   loading.value = true
   try {
     await authStore.login(email.value, password.value)
-    router.push('/admin/dashboard')
+    router.push(authStore.user?.role === 'admin' ? { name: 'admin-dashboard' } : { name: 'user-dashboard' })
   } catch (e) {
-    error.value = e instanceof ApiError && e.status === 401 ? 'Email atau password salah' : 'Login gagal, coba lagi'
+    error.value = e instanceof ApiError && e.status === 422 ? 'Email atau password salah' : 'Login gagal, coba lagi'
   } finally {
     loading.value = false
   }
@@ -39,12 +40,28 @@ async function onSubmit() {
 
       <label>
         Email or Employee ID
-        <input v-model="email" type="email" placeholder="maria.santos@company.com" required autocomplete="email" />
+        <input v-model="email" type="text" placeholder="maria.santos@company.com or ADMIN-0001" required autocomplete="username" />
       </label>
 
       <label>
         Password
-        <input v-model="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+        <span class="password-field">
+          <input
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          />
+          <button
+            class="password-toggle"
+            type="button"
+            :aria-label="showPassword ? 'Hide password' : 'Show password'"
+            @click="showPassword = !showPassword"
+          >
+            <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+          </button>
+        </span>
       </label>
 
       <a href="#" class="forgot">Forgot password?</a>
@@ -55,8 +72,7 @@ async function onSubmit() {
     </form>
 
     <p class="footer-links">
-      Don't have an account? <a href="../auth/RegisterPage.vue">Create account →</a><br />
-      IT staff? <a href="../admin/LoginPage.vue">Admin login →</a>
+      Don't have an account? <a href="../auth/RegisterPage.vue">Create account →</a>
     </p>
   </div>
 </template>
@@ -135,6 +151,31 @@ input {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  flex: 1;
+  padding-right: 34px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .forgot {

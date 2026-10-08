@@ -1,37 +1,42 @@
 import { http } from './api'
 
-export type TicketStatus = 'open' | 'in_progress' | 'resolved'
-export type TicketPriority = 'low' | 'medium' | 'high'
+export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Urgent'
+export type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed'
 
 export interface Ticket {
-  id: string
-  title: string
-  requesterName: string
+  ticket_number: string
+  name: string
+  division: string
+  issue_title: string
+  description: string
   category: string
+  device_code: string | null
   priority: TicketPriority
   status: TicketStatus
-  createdAt: string
-  assigneeName?: string
+  assigned_technician: string | null
+  repair_required: boolean
+  troubleshooting_history: string | null
+  resolution_notes?: string | null
+  created_at: string
+  updated_at: string
 }
 
-export interface TicketStats {
-  total: number
-  open: number
-  inProgress: number
-  resolved: number
+interface Paginated<T> {
+  data: T[]
 }
 
 export const ticketService = {
-  list: (params?: { status?: TicketStatus; search?: string }) => {
-    const q = new URLSearchParams()
-    if (params?.status) q.set('status', params.status)
-    if (params?.search) q.set('search', params.search)
-    const qs = q.toString()
-    return http.get<Ticket[]>(`/tickets${qs ? `?${qs}` : ''}`)
-  },
-  get: (id: string) => http.get<Ticket>(`/tickets/${id}`),
-  // ponytail: if BE has no /stats endpoint, derive counts client-side in the store
-  stats: () => http.get<TicketStats>('/tickets/stats'),
-  update: (id: string, patch: Partial<Pick<Ticket, 'status' | 'priority' | 'assigneeName'>>) =>
-    http.put<Ticket>(`/tickets/${id}`, patch),
+  list: () => http.get<Paginated<Ticket>>('/tickets').then((res) => res.data),
+  get: (ticketNumber: string) =>
+    http.get<{ data: Ticket }>(`/tickets/${ticketNumber}`).then((res) => res.data),
+  create: (payload: {
+    name: string
+    division: string
+    issue_title: string
+    description: string
+    category: string
+    priority: TicketPriority
+    device_code?: string
+    troubleshooting_result_id?: number
+  }) => http.post<{ data: Ticket }>('/tickets', payload).then((res) => res.data),
 }

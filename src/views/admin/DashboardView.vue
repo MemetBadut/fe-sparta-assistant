@@ -1,3 +1,36 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useAdminDashboardStore } from '@/stores/adminDashboard'
+import DashboardStatCard from './components/dashboardStatCard.vue'
+import TicketVolumeCard from './components/ticketVolumeBarCard.vue'
+
+const dashboard = useAdminDashboardStore()
+
+onMounted(() => {
+  dashboard.fetch()
+})
+
+const recentTickets = computed(() => dashboard.data?.recent_tickets.slice(0, 5) ?? [])
+const recentArticles = computed(() => dashboard.data?.recent_articles.slice(0, 5) ?? [])
+const volumeRows = computed(() =>
+  dashboard.volumeByCategory.map((row) => ({
+    ...row,
+    label: categoryLabel(row.category),
+  })),
+)
+
+const CATEGORY_LABELS: Record<string, string> = {
+  wifi_network: 'Wi-Fi / Network',
+  windows: 'Windows',
+  laptop_pc: 'Laptop / PC',
+  printer: 'Printer',
+  basic_software_issues: 'Basic Software Issues',
+}
+const categoryLabel = (code: string) => CATEGORY_LABELS[code] ?? code
+
+const statusClass = (status: string) => status.toLowerCase().replace(/ /g, '_')
+</script>
+
 <template>
   <div>
     <h1 class="page-title">IT-HELP DESK ASSISTANT</h1>
@@ -7,22 +40,29 @@
 
     <template v-else-if="dashboard.data">
       <section class="stats">
-        <div class="stat-card">
-          <span class="stat-label">Open Tickets</span>
-          <span class="stat-value stat-blue">{{ dashboard.data.summary.open_tickets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">In Progress</span>
-          <span class="stat-value stat-orange">{{ dashboard.data.summary.in_progress_tickets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Resolved</span>
-          <span class="stat-value stat-green">{{ dashboard.data.summary.resolved_tickets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Knowledge Articles</span>
-          <span class="stat-value stat-dark">{{ dashboard.data.summary.knowledge_articles }}</span>
-        </div>
+        <DashboardStatCard
+          label="Open Tickets"
+          :value="dashboard.data.summary.open_tickets"
+          color="blue"
+        />
+
+        <DashboardStatCard
+          label="In Progress"
+          :value="dashboard.data.summary.in_progress_tickets"
+          color="orange"
+        />
+
+        <DashboardStatCard
+          label="Resolved"
+          :value="dashboard.data.summary.resolved_tickets"
+          color="green"
+        />
+
+        <DashboardStatCard
+          label="Knowledge Articles"
+          :value="dashboard.data.summary.knowledge_articles"
+          color="dark"
+        />
       </section>
 
       <div class="grid">
@@ -81,77 +121,21 @@
           </ul>
         </section>
       </div>
-
-      <section class="card volume-card">
-        <h2>Ticket Volume by Category</h2>
-        <div v-if="dashboard.volumeByCategory.length === 0" class="muted">No data</div>
-        <div v-else class="volume-layout">
-          <div class="bars">
-            <div v-for="row in dashboard.volumeByCategory" :key="row.category" class="bar-row">
-              <span class="bar-label">{{ categoryLabel(row.category) }}</span>
-              <div class="bar-track">
-                <div class="bar-fill" :style="{ width: row.pct + '%' }">
-                  <span class="bar-count">{{ row.count }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table class="volume-table">
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Tickets</th>
-                  <th>%</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in dashboard.volumeByCategory" :key="row.category">
-                  <td data-label="Category">{{ categoryLabel(row.category) }}</td>
-                  <td data-label="Tickets">{{ row.count }}</td>
-                  <td data-label="%">{{ Math.round(row.pct) }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
     </template>
+
+    <TicketVolumeCard v-if="dashboard.data" :rows="volumeRows" />
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useAdminDashboardStore } from '@/stores/adminDashboard'
-
-const dashboard = useAdminDashboardStore()
-
-onMounted(() => {
-  dashboard.fetch()
-})
-
-const recentTickets = computed(() => dashboard.data?.recent_tickets.slice(0, 5) ?? [])
-const recentArticles = computed(() => dashboard.data?.recent_articles.slice(0, 5) ?? [])
-
-const CATEGORY_LABELS: Record<string, string> = {
-  wifi_network: 'Wi-Fi / Network',
-  windows: 'Windows',
-  laptop_pc: 'Laptop / PC',
-  printer: 'Printer',
-  basic_software_issues: 'Basic Software Issues',
-}
-const categoryLabel = (code: string) => CATEGORY_LABELS[code] ?? code
-
-const statusClass = (status: string) => status.toLowerCase().replace(/ /g, '_')
-</script>
 
 <style scoped>
 .page-title {
   font-size: 22px;
   color: #1f2937;
   margin: 0 0 20px;
-  background-color: #f3f4f4;
+  background: #f3f4f4;
+  border-radius:12px;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .muted {
@@ -168,42 +152,7 @@ const statusClass = (status: string) => status.toLowerCase().replace(/ /g, '_')
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.stat-blue {
-  color: #2563eb;
-}
-
-.stat-orange {
-  color: #ea580c;
-}
-
-.stat-green {
-  color: #16a34a;
-}
-
-.stat-dark {
-  color: #1e293b;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #64748b;
+  margin-bottom: 24px;
 }
 
 .grid {
@@ -224,95 +173,10 @@ const statusClass = (status: string) => status.toLowerCase().replace(/ /g, '_')
   box-sizing: border-box;
 }
 
-.volume-card {
-  margin-top: 20px;
-}
-
-.volume-layout {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 24px;
-}
-
-.volume-layout .bars {
-  min-width: 0;
-}
-
-.volume-table {
-  width: 100%;
-  border-collapse: collapse;
-  align-self: start;
-}
-
-.volume-table th {
-  text-align: left;
-  font-size: 12px;
-  color: #94a3b8;
-  padding-bottom: 8px;
-}
-
-.volume-table td {
-  font-size: 13px;
-  color: #1f2937;
-  padding: 6px 0;
-  border-top: 1px solid #f1f5f9;
-}
-
-.volume-table td:not(:first-child) {
-  text-align: right;
-}
-
-@media (max-width: 700px) {
-  .volume-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 .card h2 {
   font-size: 15px;
   color: #1f2937;
   margin: 0 0 16px;
-}
-
-.bar-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  min-width: 0;
-}
-
-.bar-label {
-  width: 90px;
-  font-size: 13px;
-  color: #1f2937;
-  flex-shrink: 0;
-}
-
-.bar-track {
-  flex: 1;
-  min-width: 0;
-  background: #f1f5f9;
-  border-radius: 6px;
-  height: 22px;
-}
-
-.bar-fill {
-  height: 100%;
-  min-width: 28px;
-  background: #3b82f6;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 8px;
-  box-sizing: border-box;
-}
-
-.bar-count {
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
 }
 
 .knowledge-preview {

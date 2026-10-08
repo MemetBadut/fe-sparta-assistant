@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
-import { http } from '@/services/api'
+import { ApiError, http } from '@/services/api'
 
-interface User {
+export type UserRole = 'admin' | 'employee'
+
+export interface User {
   id: number
   name: string
   email: string
   employee_id: string | null
   division: string | null
-  role: string
+  role: UserRole
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -36,8 +38,10 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await http.get<{ data: User }>('/profile')
         this.user = res.data
-      } catch {
-        this.user = null
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          this.user = null
+        }
       } finally {
         this.checked = true
       }

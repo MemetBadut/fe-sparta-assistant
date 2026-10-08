@@ -1,5 +1,22 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? ''
-const ORIGIN = BASE_URL.replace(/\/api\/?$/, '')
+function resolveBaseUrl() {
+  const configured = import.meta.env.VITE_API_URL || '/api'
+  if (typeof window === 'undefined' || configured.startsWith('/'))
+    return configured.replace(/\/$/, '')
+
+  try {
+    const url = new URL(configured, window.location.origin)
+    const localHosts = ['localhost', '127.0.0.1']
+    if (localHosts.includes(url.hostname) && localHosts.includes(window.location.hostname)) {
+      url.hostname = window.location.hostname
+    }
+    return url.toString().replace(/\/$/, '')
+  } catch {
+    return '/api'
+  }
+}
+
+const BASE_URL = resolveBaseUrl()
+const ORIGIN = BASE_URL.startsWith('/') ? '' : BASE_URL.replace(/\/api\/?$/, '')
 
 export class ApiError extends Error {
   constructor(
@@ -40,6 +57,8 @@ export const http = {
   get: <T>(path: string) => request<T>(path),
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),

@@ -30,7 +30,7 @@
           </div>
         </div>
 
-        <button class="logout" type="button">
+        <button class="logout" type="button" @click="handleLogout">
           <i class="ri-logout-box-r-line"></i>
         </button>
       </div>
@@ -52,12 +52,22 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const sidebarOpen = ref(true)
 
 onMounted(() => {
   if (window.innerWidth <= 768) sidebarOpen.value = false
 })
+
+async function handleLogout() {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
 </script>
 
 <style scoped>
